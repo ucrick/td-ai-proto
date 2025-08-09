@@ -1,18 +1,17 @@
+// src/main.ts
 import Phaser from 'phaser';
 import { GameScene } from './scenes/GameScene';
-
-const TILE = 80;
-const W = 8;
-const H = 8;
-const PANEL = 260; // 面板+边距
-const WIDTH  = W * TILE + PANEL; // 640 + 260 = 900
-const HEIGHT = H * TILE + 20;
+import { LAYOUT } from './core/layout';
 
 new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
-  width: WIDTH,
-  height: HEIGHT,
+  width: LAYOUT.width,
+  height: LAYOUT.height,
   backgroundColor: '#1b1d2a',
-  scene: [GameScene]
+  scene: [GameScene],
 });
+
+// 简单处理横竖屏/窗口变化：整页刷新重新计算布局
+window.addEventListener('orientationchange', () => location.reload());
+window.addEventListener('resize', () => location.reload());
