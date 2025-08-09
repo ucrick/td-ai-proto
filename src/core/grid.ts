@@ -1,37 +1,43 @@
-import type { Tile, TileType } from './types';
+// ==== 尺寸 ====
+export const W = 8;
+export const H = 8;
 
-export const W = 8, H = 8;
+// ==== 地形 ====
+export type TileType = 'PLAIN' | 'FOREST' | 'HILL' | 'RIVER' | 'SWAMP';
 
-export function genMap(): Tile[] {
-  const pick = (): TileType => {
-    const r = Math.random();
-    if (r < 0.15) return 'FOREST';
-    if (r < 0.28) return 'HILL';
-    if (r < 0.38) return 'RIVER';
-    return 'PLAIN';
-  };
-  const arr: Tile[] = [];
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      arr.push({ q: x, r: y, type: pick() });
-    }
-  }
-  return arr;
+export interface Tile {
+  q: number; // x
+  r: number; // y
+  type: TileType;
 }
 
+// 移动力消耗（补上 SWAMP）
 export const moveCost: Record<TileType, number> = {
   PLAIN: 1,
-  FOREST: 2, // 森林移动2
-  HILL: 2,   // 丘陵移动2
-  RIVER: 2,  // 简化：河格本身移动2；跨河额外+1可后续再做
+  FOREST: 2,
+  HILL: 2,
+  RIVER: 2,
+  SWAMP: 3,
 };
 
-export function defenseBonus(t: TileType): number {
-  if (t === 'FOREST') return 0.2;
-  if (t === 'HILL') return 0.3;
-  return 0;
-}
-
+// 取格子
 export function tileAt(tiles: Tile[], x: number, y: number): Tile | undefined {
   return tiles.find(t => t.q === x && t.r === y);
+}
+
+// 随机生成地图（带 SWAMP）
+export function genMap(): Tile[] {
+  const tiles: Tile[] = [];
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const r = Math.random();
+      let type: TileType = 'PLAIN';
+      if (r < 0.08) type = 'SWAMP';
+      else if (r < 0.18) type = 'FOREST';
+      else if (r < 0.26) type = 'HILL';
+      else if (r < 0.32) type = 'RIVER';
+      tiles.push({ q: x, r: y, type });
+    }
+  }
+  return tiles;
 }

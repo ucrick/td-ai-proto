@@ -1,4 +1,4 @@
-export type TileType = 'PLAIN' | 'FOREST' | 'HILL' | 'RIVER';
+export type TileType = 'PLAIN' | 'FOREST' | 'HILL' | 'RIVER' | 'SWAMP';
 
 export interface Tile {
   q: number;

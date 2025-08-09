@@ -141,7 +141,8 @@ export class GameScene extends Phaser.Scene {
     const attTile = tileAt(this.state.tiles, attacker.x, attacker.y)!.type;
     const defTile = tileAt(this.state.tiles, defender.x, defender.y)!.type;
 
-    const { dmgToDef, dmgToAtt } = calcExchangeDamage(attacker, defender, attTile, defTile);
+    const { dmgToDef, dmgToAtt } =
+      calcExchangeDamage(attacker, defender, attTile, defTile, this.state);
 
     defender.hp = Math.max(0, defender.hp - dmgToDef);
     attacker.hp = Math.max(0, attacker.hp - dmgToAtt);

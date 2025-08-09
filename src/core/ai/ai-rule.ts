@@ -21,7 +21,8 @@ export function aiTakeTurn(state: GameState) {
     if (adj) {
       const attTile = tileAt(state.tiles, u.x, u.y)!.type;
       const defTile = tileAt(state.tiles, adj.x, adj.y)!.type;
-      const { dmgToDef, dmgToAtt } = calcExchangeDamage(u, adj, attTile, defTile);
+      const { dmgToDef, dmgToAtt } =
+        calcExchangeDamage(u, adj, attTile, defTile, state);
 
       adj.hp = Math.max(0, adj.hp - dmgToDef);
       u.hp   = Math.max(0, u.hp   - dmgToAtt);

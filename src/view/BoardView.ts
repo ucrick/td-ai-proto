@@ -37,6 +37,7 @@ export class BoardView {
       for (let x = 0; x < W; x++) {
         const t = tileAt(tiles, x, y)!;
         const color =
+          t.type === 'SWAMP'  ? 0x4b3b66 : // 新：沼泽
           t.type === 'FOREST' ? 0x2e8b57 :
           t.type === 'HILL'   ? 0x8f7a66 :
           t.type === 'RIVER'  ? 0x2f6ee2 : 0x4a4f66;
