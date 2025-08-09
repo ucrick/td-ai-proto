@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { GameState, Unit } from '../core/types';
 import { LAYOUT } from '../core/layout';
-import { upkeepFor, incomeFor, minesOwned } from '../core/economy';
+import { upkeepFor, incomeFor, garrisonedMinesCount } from '../core/economy';
 
 function makeButton(
   scene: Phaser.Scene,
@@ -11,11 +11,11 @@ function makeButton(
 ) {
   const g = scene.add.container(x, y);
   const bg = scene.add.rectangle(0, 0, w, h, 0x3a4154, 1)
-    .setOrigin(0, 0)
-    .setStrokeStyle(1, 0x777);
+    .setOrigin(0, 0).setStrokeStyle(1, 0x777);
   const txt = scene.add.text(12, 8, label, { color: '#fff', fontSize: '16px' });
   g.add([bg, txt]);
   g.setSize(w, h);
+  g.setData('bg', bg);
   g.setInteractive(new Phaser.Geom.Rectangle(0, 0, w, h), Phaser.Geom.Rectangle.Contains)
     .on('pointerdown', () => onTap());
   return g;
@@ -34,7 +34,7 @@ export class MobileHUD {
   private onUpgrade: () => void;
 
   private bg!: Phaser.GameObjects.Rectangle;
-  private txtGold!: Phaser.GameObjects.Text; // 金币+维护+回合净
+  private txtGold!: Phaser.GameObjects.Text;
 
   private shopGroup!: Phaser.GameObjects.Container;
   private unitGroup!: Phaser.GameObjects.Container;
@@ -75,30 +75,27 @@ export class MobileHUD {
 
     this.bg = this.scene.add
       .rectangle(0, hudY, WPIX, HUDH, 0x151824, 1)
-      .setOrigin(0, 0)
-      .setStrokeStyle(1, 0x333);
+      .setOrigin(0, 0).setStrokeStyle(1, 0x333);
 
-    // 金币 + 维护 + 回合净
     this.txtGold = this.scene.add.text(12, hudY + 8, '', {
       color: '#ffd54f', fontSize: '16px'
     });
 
-    // — 商店 —
+    // 商店
     this.shopGroup = this.scene.add.container(0, 0);
     const btnW = Math.floor((WPIX - 12 * 2 - 8 * 2) / 3);
     const btnH = 40;
-    this.btnScout = makeButton(this.scene, 12, hudY + 36, btnW, btnH, '侦察兵 5G', () => this.onSpawnScout());
-    this.btnMelee = makeButton(this.scene, 12 + btnW + 8, hudY + 36, btnW, btnH, '近战 10G', () => this.onSpawnMelee());
-    this.btnEnd   = makeButton(this.scene, 12 + (btnW + 8) * 2, hudY + 36, btnW, btnH, '结束回合', () => this.onEndTurn());
+    this.btnScout = makeButton(this.scene, 12,               hudY + 36, btnW, btnH, '侦察兵 5G', () => this.onSpawnScout());
+    this.btnMelee = makeButton(this.scene, 12 + btnW + 8,   hudY + 36, btnW, btnH, '近战 10G', () => this.onSpawnMelee());
+    this.btnEnd   = makeButton(this.scene, 12 + (btnW + 8)*2, hudY + 36, btnW, btnH, '结束回合', () => this.onEndTurn());
     this.shopGroup.add([this.btnScout, this.btnMelee, this.btnEnd]);
 
-    // — 单位 —
+    // 单位
     this.unitGroup = this.scene.add.container(0, 0);
     this.unitTitle = this.scene.add.text(12, hudY + 44, '未选中单位', { color: '#fff', fontSize: '16px' });
     this.unitBody  = this.scene.add.text(12, hudY + 72, '点击棋子查看详情', {
       color: '#cbd5e1', fontSize: '14px', lineSpacing: 4,
     });
-
     const uBtnW = Math.floor((WPIX - 12 * 2 - 8) / 2);
     const uBtnH = 38;
     this.btnFortify = makeButton(this.scene, 12,            hudY + 116, uBtnW, uBtnH, '驻扎 +5DEF/1回合', () => this.onFortify());
@@ -112,12 +109,17 @@ export class MobileHUD {
   updateTop() {
     const s = this.state.turnSide;
     const upkeep = upkeepFor(this.state, s);
-    const inc = incomeFor(minesOwned(this.state, s));
+    const inc = incomeFor(garrisonedMinesCount(this.state, s));
     const net = inc - upkeep;
     const netStr = net >= 0 ? `+${net}` : `${net}`;
     this.txtGold.setText(`金币：${this.state.gold[s]}    维护：-${upkeep}/回合    回合净：${netStr}`);
   }
 
+  setMode(m: Mode) {
+    this.mode = m;
+    this.shopGroup.setVisible(m === 'shop');
+    this.unitGroup.setVisible(m === 'unit');
+  }
   showUnit(u: Unit | null) {
     this.setMode('unit');
     if (!u) {
@@ -129,11 +131,18 @@ export class MobileHUD {
     this.unitTitle.setText(`${side} · ${u.name ?? u.cls}`);
     this.unitBody.setText(`HP ${u.hp}/${u.maxHp}\nATK ${u.atk}  DEF ${u.def}\nMP ${u.mp}/${u.maxMp}`);
   }
-
   showShop() { this.setMode('shop'); }
 
-  private setMode(m: Mode) {
-    this.shopGroup.setVisible(m === 'shop');
-    this.unitGroup.setVisible(m === 'unit');
+  // 按钮置灰
+  setShopEnabled(canScout: boolean, canMelee: boolean) {
+    const set = (btn: Phaser.GameObjects.Container, ok: boolean) => {
+      const bg = btn.getData('bg') as Phaser.GameObjects.Rectangle;
+      bg?.setFillStyle(ok ? 0x3a4154 : 0x2a2f3f, 1);
+      btn.setAlpha(ok ? 1 : 0.5);
+      btn.removeInteractive();
+      if (ok) btn.setInteractive(new Phaser.Geom.Rectangle(0,0,btn.width,btn.height), Phaser.Geom.Rectangle.Contains);
+    };
+    set(this.btnScout, canScout);
+    set(this.btnMelee, canMelee);
   }
 }

@@ -1,28 +1,24 @@
-// src/core/layout.ts
-import { W, H } from './grid';
-
-/** 手机优先：上棋盘、下操作栏 */
-const HUD_MIN = 160;
-const HUD_MAX = 240;
-
-function calcLayout() {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  // 底部操作区 ≈ 1/4 高度，但限制在区间内
-  const hud = Math.max(HUD_MIN, Math.min(HUD_MAX, Math.floor(vh * 0.25)));
-
-  // 棋盘区域的最大可用高
-  const boardHAvail = vh - hud;
-
-  // 每格像素（尽量大）
-  const tile = Math.max(44, Math.floor(Math.min(vw / W, boardHAvail / H)));
-
-  const width  = tile * W;
-  const height = tile * H + hud;
-
-  return { width, height, tile, hud };
+export interface Layout {
+  width: number;
+  height: number;
+  boardHeight: number; // 70%
+  hud: number;         // 30%
+  tile: number;        // tileSize 像素
 }
 
-/** 当前布局（页面刷新时重算即可） */
-export const LAYOUT = calcLayout();
+import { W, H } from './grid';
+
+export function calcLayout(): Layout {
+  const width = Math.min(window.innerWidth, 900);  // 上限避免超大
+  const height = window.innerHeight;
+
+  const boardHeight = Math.floor(height * 0.7);
+  const hud = height - boardHeight;
+  const tile = Math.floor(Math.min(width / W, boardHeight / H));
+
+  // 把结果挂到全局，其他模块读取
+  (window as any).__LAYOUT__ = { width, height, boardHeight, hud, tile };
+  return (window as any).__LAYOUT__;
+}
+
+export const LAYOUT: Layout = (window as any).__LAYOUT__ ?? calcLayout();
